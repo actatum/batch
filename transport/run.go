@@ -10,16 +10,29 @@ import (
 )
 
 // Run starts the http server
-// TODO: maybe put goroutine for batch interval in here
 func Run() error {
 	conf, err := getConfig()
 	if err != nil {
 		return errs.Wrap(err, "transport.Run")
 	}
+
 	repo := memory.NewMemoryRepository(conf)
-	service := batch.NewBatchService(repo)
+
+	logger, err := batch.NewLogger()
+	if err != nil {
+		return errs.Wrap(err, "transport.Run")
+	}
+
+	service := batch.NewBatchService(repo, logger)
+
 	server := NewServer(service)
+
 	r := routes(server)
+
+	go service.Background()
+
+	service.Logger.Info("Batch server initialized at port :8080")
+
 	return r.Start(":8080")
 }
 

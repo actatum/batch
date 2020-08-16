@@ -1,5 +1,7 @@
 package batch
 
+import "time"
+
 // Request data model for an incoming request
 type Request struct {
 	UserID    int      `json:"user_id"`
@@ -25,6 +27,13 @@ type Login struct {
 type PhoneNumbers struct {
 	Home   string `json:"home"`
 	Mobile string `json:"mobile"`
+}
+
+// Result data model for results of posting to the batch endpoint
+type Result struct {
+	Size     int           `json:"size"`
+	Code     int           `json:"code"`
+	Duration time.Duration `json:"duration"`
 }
 
 // Config is a data model for the repositories configuration

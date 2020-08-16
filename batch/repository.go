@@ -1,6 +1,8 @@
 package batch
 
-// Repository is an interface between the service layer and the persistence layer
+// Repository - an interface for interacting with a persistence layer
 type Repository interface {
-	Create(*Request)
+	Config() *Config
+	Create(*Service, *Request) (*Result, error)
+	Flush(*Service) (*Result, error)
 }
