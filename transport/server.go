@@ -31,11 +31,9 @@ func (s *Server) Log(c echo.Context) error {
 		return err
 	}
 
-	res, err := s.service.Log(&req)
-	if err != nil {
-		s.service.Logger.Error(err.Error())
+	if err := s.service.Log(&req); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	return c.JSON(http.StatusOK, res)
+	return c.String(http.StatusOK, "success")
 }

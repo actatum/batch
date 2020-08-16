@@ -36,39 +36,23 @@ func (r *repository) Config() *batch.Config {
 }
 
 // Create adds a new request to the cache
-func (r *repository) Create(s *batch.Service, req *batch.Request) (*batch.Result, error) {
-	var res *batch.Result
-	var err error
-
-	if r.isFull() {
-		res, err = r.Flush(s)
-		if err != nil {
-			return nil, err
-		}
-
-		return res, nil
-	}
-
+func (r *repository) Add(req *batch.Request) {
 	r.cache = append(r.cache, req)
-
-	return res, nil
 }
 
 // Flush flushes the cache and posts to the configured endpoint
-func (r *repository) Flush(s *batch.Service) (*batch.Result, error) {
+func (r *repository) Flush() (*batch.Result, error) {
 	res, err := retry(maxAttempts, 2*time.Second, r.post)
 	if err != nil {
-		s.Logger.Fatal(err.Error())
+		return nil, err
 	}
-
-	s.Logger.Sugar().Infof("batch size: %d, status code: %d, duration: %v", res.Size, res.Code, res.Duration.String())
 
 	return res, nil
 }
 
-// isFull returns true if the cache is at max capacity and false otherwise
-func (r *repository) isFull() bool {
-	return len(r.cache) == r.config.Size
+// WillFill returns true if the next entry to the cache will fill it to capacity
+func (r *repository) WillFill() bool {
+	return len(r.cache)+1 == r.config.Size
 }
 
 // post makes an http post request to the specified endpoint

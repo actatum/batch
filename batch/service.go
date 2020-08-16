@@ -26,13 +26,21 @@ func (s *Service) Health() string {
 }
 
 // Log adds a request to the repository
-func (s *Service) Log(req *Request) (*Result, error) {
-	res, err := s.repo.Create(s, req)
-	if err != nil {
-		return nil, err
+func (s *Service) Log(req *Request) error {
+	if s.repo.WillFill() {
+		s.repo.Add(req)
+		resp, err := s.repo.Flush()
+		if err != nil {
+			s.Logger.Fatal(err.Error())
+		}
+
+		s.Logger.Sugar().Infof("batch size: %d, status code: %d, duration: %v", resp.Size, resp.Code, resp.Duration.String())
+		return nil
 	}
 
-	return res, nil
+	s.repo.Add(req)
+
+	return nil
 }
 
 // Background flushes the cache after the Configured time frame
@@ -40,6 +48,11 @@ func (s *Service) Background() {
 	interval := time.Duration(s.repo.Config().Interval) * time.Second
 
 	for range time.Tick(interval) {
-		s.repo.Flush(s)
+		resp, err := s.repo.Flush()
+		if err != nil {
+			s.Logger.Fatal(err.Error())
+		}
+
+		s.Logger.Sugar().Infof("batch size: %d, status code: %d, duration: %v", resp.Size, resp.Code, resp.Duration.String())
 	}
 }
