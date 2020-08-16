@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/actatum/batch/batch"
@@ -13,12 +14,13 @@ import (
 
 var (
 	maxAttempts = 4
+	mu          sync.Mutex
 )
 
 // repository implements the batch.Repository interface
 type repository struct {
 	config *batch.Config
-	cache  []*batch.Request
+	cache  []batch.Request
 }
 
 // NewMemoryRepository returns an object implementing batch.Repository interface
@@ -26,7 +28,7 @@ type repository struct {
 func NewMemoryRepository(c *batch.Config) batch.Repository {
 	return &repository{
 		config: c,
-		cache:  make([]*batch.Request, 0),
+		cache:  make([]batch.Request, 0),
 	}
 }
 
@@ -36,12 +38,16 @@ func (r *repository) Config() *batch.Config {
 }
 
 // Create adds a new request to the cache
-func (r *repository) Add(req *batch.Request) {
+func (r *repository) Add(req batch.Request) {
+	mu.Lock()
 	r.cache = append(r.cache, req)
+	mu.Unlock()
 }
 
 // Flush flushes the cache and posts to the configured endpoint
 func (r *repository) Flush() (*batch.Result, error) {
+	mu.Lock()
+	defer mu.Unlock()
 	res, err := retry(maxAttempts, 2*time.Second, r.post)
 	if err != nil {
 		return nil, err
@@ -52,6 +58,8 @@ func (r *repository) Flush() (*batch.Result, error) {
 
 // WillFill returns true if the next entry to the cache will fill it to capacity
 func (r *repository) WillFill() bool {
+	mu.Lock()
+	defer mu.Unlock()
 	return len(r.cache)+1 == r.config.Size
 }
 
@@ -76,7 +84,7 @@ func (r *repository) post() (*batch.Result, error) {
 		return nil, errors.New("post failed after retrying " + strconv.Itoa(maxAttempts-1) + " times, status code: " + strconv.Itoa(res.StatusCode))
 	}
 
-	r.cache = make([]*batch.Request, 0)
+	r.cache = make([]batch.Request, 0)
 
 	return &batch.Result{
 		Size:     size,

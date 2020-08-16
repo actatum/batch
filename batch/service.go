@@ -26,7 +26,7 @@ func (s *Service) Health() string {
 }
 
 // Log adds a request to the repository
-func (s *Service) Log(req *Request) error {
+func (s *Service) Log(req Request) error {
 	if s.repo.WillFill() {
 		s.repo.Add(req)
 		resp, err := s.repo.Flush()

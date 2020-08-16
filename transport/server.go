@@ -31,7 +31,7 @@ func (s *Server) Log(c echo.Context) error {
 		return err
 	}
 
-	if err := s.service.Log(&req); err != nil {
+	if err := s.service.Log(req); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
