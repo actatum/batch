@@ -68,11 +68,7 @@ func (r *repository) Flush(s *batch.Service) (*batch.Result, error) {
 
 // isFull returns true if the cache is at max capacity and false otherwise
 func (r *repository) isFull() bool {
-	if len(r.cache) == r.config.Size {
-		return true
-	}
-
-	return false
+	return len(r.cache) == r.config.Size
 }
 
 // post makes an http post request to the specified endpoint

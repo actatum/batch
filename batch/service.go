@@ -39,12 +39,7 @@ func (s *Service) Log(req *Request) (*Result, error) {
 func (s *Service) Background() {
 	interval := time.Duration(s.repo.Config().Interval) * time.Second
 
-	for {
-		select {
-		case <-time.After(interval):
-			break
-		}
-
+	for range time.Tick(interval) {
 		s.repo.Flush(s)
 	}
 }
